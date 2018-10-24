@@ -1,5 +1,4 @@
 from numpy import array, uint8, random
-from sys import exit
 
 if __name__=='__main__': 
     exit('Oops, you ran the wrong file.')

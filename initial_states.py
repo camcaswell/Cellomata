@@ -1,4 +1,3 @@
-from sys import exit
 import numpy as np
 from math import floor, ceil
 
