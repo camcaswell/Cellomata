@@ -1,10 +1,9 @@
 import numpy as np
-import configparser
+from configparser import ConfigParser
+from ast import literal_eval
 
 if __name__=='__main__': 
     exit('Oops, you ran the wrong file.')
-
-BLINKY1 = {(0, (0, 8)): 1, (0, (1, 7)): 0, (0, (2, 6)): 1, (0, (3, 5)): 1, (0, (4, 4)): 1, (0, (5, 3)): 1, (0, (6, 2)): 0, (0, (7, 1)): 0, (0, (8, 0)): 0, (1, (0, 8)): 0, (1, (1, 7)): 0, (1, (2, 6)): 1, (1, (3, 5)): 1, (1, (4, 4)): 0, (1, (5, 3)): 0, (1, (6, 2)): 0, (1, (7, 1)): 0, (1, (8, 0)): 0}
 
 def ruledict_to_generator(ruledict, states):
 
@@ -45,10 +44,10 @@ def ruledict_to_generator(ruledict, states):
 def preset(preset_name):
 
     with open('Preset_Update_Functions.cfg') as preset_file:
-        preset_parser = configparser.ConfigParser()
+        preset_parser = ConfigParser()
         preset_parser.readfp(preset_file)
-        ruledict = preset_parser.get(preset_name, 'ruledict')
-        states = preset_parser.get(preset_name, 'states')
+        ruledict = literal_eval(preset_parser.get(preset_name, 'ruledict'))
+        states = literal_eval(preset_parser.get(preset_name, 'states'))
 
     retfunc = ruledict_to_generator(ruledict, states)
     retfunc.ruledict = ruledict
