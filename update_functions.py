@@ -5,7 +5,7 @@ from ast import literal_eval
 if __name__=='__main__': 
     exit('Oops, you ran the wrong file.')
 
-def ruledict_to_generator(ruledict, states):
+def ruledict_to_generator(ruledict):
 
     def retfunc(initial):
         ''' When given an initial boardstate, this function will construct a
@@ -14,7 +14,6 @@ def ruledict_to_generator(ruledict, states):
             It uses the *ruledict* that was passed to the outer
             function to determine the next boardstate.
         '''
-
         rows = initial.shape[0]
         columns = initial.shape[1]
         current = initial
@@ -22,7 +21,7 @@ def ruledict_to_generator(ruledict, states):
         while True:
             yield current
 
-            neighbor_sums = np.zeros((rows, columns, states), dtype=np.uint8)
+            neighbor_sums = np.zeros((rows, columns, ruledict['states']), dtype=np.uint8)
             for row in range(rows):
                 for col in range(columns):
                     for a in range (row-1, row+2):
@@ -42,16 +41,22 @@ def ruledict_to_generator(ruledict, states):
     return retfunc
 
 def preset(preset_name):
-
     with open('Preset_Update_Functions.cfg') as preset_file:
         preset_parser = ConfigParser()
         preset_parser.readfp(preset_file)
         ruledict = literal_eval(preset_parser.get(preset_name, 'ruledict'))
-        states = literal_eval(preset_parser.get(preset_name, 'states'))
 
-    retfunc = ruledict_to_generator(ruledict, states)
+    retfunc = ruledict_to_generator(ruledict)
     retfunc.ruledict = ruledict
     return retfunc
+
+def pre_dict(preset_name):
+    with open('Preset_Update_Functions.cfg') as preset_file:
+        preset_parser = ConfigParser()
+        preset_parser.readfp(preset_file)
+        ruledict = literal_eval(preset_parser.get(preset_name, 'ruledict'))
+    return ruledict
+
 
 
 def random_update_function(states=2, nhood='Moore', radius=1, seed=None):
@@ -59,11 +64,10 @@ def random_update_function(states=2, nhood='Moore', radius=1, seed=None):
         a dict from the uniform distribution over the functionspace as defined by
         the parameters passed. The dict is overwritten to Last_Random_Update_Function.txt.
     '''
-
     np.random.seed(seed)
     nbors = (2*radius+1)*(2*radius+1)-1
 
-    rules = {}
+    rules = {'states':states}
     for state in range(states):
         for neighbor_partition in starsnbars(nbors, states):
             rules[state, neighbor_partition] = np.random.randint(0, states, dtype=np.uint8)
@@ -71,9 +75,8 @@ def random_update_function(states=2, nhood='Moore', radius=1, seed=None):
     with open('Last_Random_Update_Function.txt', 'w') as savefile:
         print('[NAME]', file=savefile)
         print(f'ruledict = {rules}', file=savefile)
-        print(f'states: {states}', file=savefile)
 
-    retfunc = ruledict_to_generator(rules, states)
+    retfunc = ruledict_to_generator(rules)
     retfunc.ruledict = rules
     return retfunc
 
@@ -90,10 +93,27 @@ def starsnbars(a, b):
             for sumlist in starsnbars(a-c,b-1):
                 yield (c,) + sumlist
 
+def func_dist(ruledict1, ruledict2):
+    try:
+        str1 = ''
+        str2 = ''
+        retval = 0
+        for key, val1 in ruledict1.items():
+            if key=='states': continue
+            str1 += str(val1)
+            str2 += str(ruledict2[key])
+            if val1-ruledict2[key]:
+                retval+=1
+        return retval, '\n'+str1+'\n'+str2+'\n'
+    except:
+        raise ValueError("Functions must have same domain (i.e. neighborhoods and number of states).")
 
-
-
-
+def outcomes(ruledict):
+    totals = [0]*ruledict['states']
+    for key,val in ruledict.items():
+        if key=='states': continue
+        totals[val] += 1
+    return totals
 
 
 
