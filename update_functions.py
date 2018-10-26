@@ -5,7 +5,7 @@ from ast import literal_eval
 if __name__=='__main__': 
     exit('Oops, you ran the wrong file.')
 
-def ruledict_to_generator(ruledict):
+def _ruledict_to_generator(ruledict):
 
     def retfunc(initial):
         ''' When given an initial boardstate, this function will construct a
@@ -41,12 +41,8 @@ def ruledict_to_generator(ruledict):
     return retfunc
 
 def preset(preset_name):
-    with open('Preset_Update_Functions.cfg') as preset_file:
-        preset_parser = ConfigParser()
-        preset_parser.readfp(preset_file)
-        ruledict = literal_eval(preset_parser.get(preset_name, 'ruledict'))
-
-    retfunc = ruledict_to_generator(ruledict)
+    ruledict = pre_dict(preset_name)
+    retfunc = _ruledict_to_generator(ruledict)
     retfunc.ruledict = ruledict
     return retfunc
 
@@ -59,7 +55,7 @@ def pre_dict(preset_name):
 
 
 
-def random_update_function(states=2, nhood='Moore', radius=1, seed=None):
+def random_update_function(states=2, nhood='Moore', radius=1, stability=0, seed=None):
     ''' random_update_function() generates a random update function in the form of
         a dict from the uniform distribution over the functionspace as defined by
         the parameters passed. The dict is overwritten to Last_Random_Update_Function.txt.
@@ -67,30 +63,39 @@ def random_update_function(states=2, nhood='Moore', radius=1, seed=None):
     np.random.seed(seed)
     nbors = (2*radius+1)*(2*radius+1)-1
 
+    ''' *stability* is the probability that a cell will remain in the same state after it is updated
+        (over the uniform space of possible state-neighborhood sum combinations, i.e. ignoring that some configurations may be more likely).
+        Normally the outcome states are chosen uniformly, but this allows you to artificially increase the stability of boardstates.
+    '''
+    if not stability:
+        stability = 1/states
+
     rules = {'states':states}
     for state in range(states):
-        for neighbor_partition in starsnbars(nbors, states):
-            rules[state, neighbor_partition] = np.random.randint(0, states, dtype=np.uint8)
+        pdist = [(1-stability)/(states-1)]*states
+        pdist[state] = stability
+        for neighbor_partition in _starsnbars(nbors, states):
+            rules[state, neighbor_partition] = np.random.choice(states, 1, p=pdist)[0]
 
     with open('Last_Random_Update_Function.txt', 'w') as savefile:
         print('[NAME]', file=savefile)
         print(f'ruledict = {rules}', file=savefile)
 
-    retfunc = ruledict_to_generator(rules)
+    retfunc = _ruledict_to_generator(rules)
     retfunc.ruledict = rules
     return retfunc
 
     
-def starsnbars(a, b):
+def _starsnbars(a, b):
     ''' Constructs a generator that yields all the possible ways to partition *a* objects into *b* sets
     '''
     if a == 0:
-        yield tuple([0 for idx in range(b)])
+        yield (0,)*b
     elif b == 1:
         yield (a,)
     else:
         for c in range(a+1):
-            for sumlist in starsnbars(a-c,b-1):
+            for sumlist in _starsnbars(a-c,b-1):
                 yield (c,) + sumlist
 
 def func_dist(ruledict1, ruledict2):
@@ -115,6 +120,10 @@ def outcomes(ruledict):
         totals[val] += 1
     return totals
 
-
-
+def stability(ruledict):
+    stable_counts = [0]*ruledict['states']
+    for key,state in ruledict.items():
+        if key=='states': continue
+        if key[0]==state: stable_counts[state] += 1
+    return stable_counts
 
