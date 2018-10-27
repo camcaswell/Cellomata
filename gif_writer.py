@@ -13,31 +13,32 @@ def main():
 
     SEED = None
 
-    STATES = 2
+    STATES = 3
     #NEIGHBORHOOD = 'Moore'
-    RADIUS = 1
-    ROWS = 120
-    COLUMNS = 120
+    #RADIUS = 1
+    ROWS = 100
+    COLUMNS = 100
 
-    CENTER = 3
-    CENTER_PROPORTION = .7
-    H_MIRROR = 1
-    V_MIRROR = 2
+    CENTER = 0
+    CENTER_PROPORTION = .95
+    H_MIRROR = 0
+    V_MIRROR = 0
 
-    #COLOR_MAP = cm.BW
-    COLOR_MAP = cm.random_cmap(STATES, SEED)
-    CELL_SIZE = 7
-    GENERATIONS = 100
-    FRAME_DELAY = .1
+    COLOR_MAP = cm.preset('FRIENDLYVOID')
+    #COLOR_MAP = cm.random_cmap(STATES, SEED)
+    CELL_SIZE = 5
+    GENERATIONS = 20
+    FRAME_DELAY = .02
 
-    initial_state = inits.random_state(rows=ROWS, columns=COLUMNS, states=STATES, seed=SEED, center=CENTER, p=CENTER_PROPORTION, h_mirror=H_MIRROR, v_mirror=V_MIRROR)
-    #updater = ufuns.random_update_function(states=STATES, seed=SEED)
-    updater = ufuns.preset('BLINKY1')
+    initial_state = inits.random_state(ROWS, COLUMNS, STATES, SEED, CENTER, CENTER_PROPORTION, H_MIRROR, V_MIRROR)
+
+    updater = ufuns.random_update_function(states=STATES, seed=SEED, stability=.75)
+    #updater = ufuns.preset('RIGRID')
     #ruledict = updater.ruledict
 
     boardstates = updater(initial_state)
 
-    frames = frame_generator(boards=boardstates, cell_size=CELL_SIZE, color_map=COLOR_MAP)
+    frames = frame_generator(boards=boardstates, color_map=COLOR_MAP, cell_size=CELL_SIZE)
 
     def get_frame(dummy):
         return next(frames)
@@ -45,7 +46,9 @@ def main():
     moviepy.editor.VideoClip(get_frame, duration=GENERATIONS*FRAME_DELAY).write_gif(FILENAME, fps=1/FRAME_DELAY)
 
 
-def frame_generator(boards=None, cell_size=10, color_map=None):
+
+
+def frame_generator(boards, color_map, cell_size=10):
     
     if not isinstance(color_map, GeneratorType): color_map = repeat(color_map)
 
@@ -53,8 +56,12 @@ def frame_generator(boards=None, cell_size=10, color_map=None):
         frame = np.zeros([cell_size*d for d in B.shape]+[3], dtype=np.uint8)
         for row in range(B.shape[0]):
             for column in range(B.shape[1]):
-                frame[cell_size*row:cell_size*(row+1), cell_size*column:cell_size*(column+1)] = next(color_map)[B[row,column]]
+                frame[cell_size*row:cell_size*(row+1), cell_size*column:cell_size*(column+1)] = next(color_map).vecs()[B[row,column]]
         yield frame
+
+def gen_no_write(get_frame, g):
+    for i in range(g):
+        get_frame(g)
 
 
 if __name__=='__main__':
