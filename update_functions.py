@@ -48,9 +48,9 @@ def preset(preset_name):
 
 def pre_dict(preset_name):
     with open('Preset_Update_Functions.cfg') as preset_file:
-        preset_parser = ConfigParser()
-        preset_parser.readfp(preset_file)
-        ruledict = literal_eval(preset_parser.get(preset_name, 'ruledict'))
+        preset_reader = ConfigParser()
+        preset_reader.read_file(preset_file)
+        ruledict = literal_eval(preset_reader.get(preset_name, 'ruledict'))
     return ruledict
 
 
@@ -77,9 +77,12 @@ def random_update_function(states=2, nhood='Moore', radius=1, stability=0, seed=
         for neighbor_partition in _starsnbars(nbors, states):
             rules[state, neighbor_partition] = np.random.choice(states, 1, p=pdist)[0]
 
-    with open('Last_Random_Update_Function.txt', 'w') as savefile:
-        print('[NAME]', file=savefile)
-        print(f'ruledict = {rules}', file=savefile)
+    config_writer = ConfigParser()
+    with open('Last_Random.cfg', 'r') as savefile:
+        config_writer.read_file(savefile)
+        config_writer.set('Update Function', 'ruledict', str(rules))
+    with open('Last_Random.cfg', 'w') as savefile:
+        config_writer.write(savefile)
 
     retfunc = _ruledict_to_generator(rules)
     retfunc.ruledict = rules
