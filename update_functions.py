@@ -1,6 +1,10 @@
 import numpy as np
 from configparser import ConfigParser
 from ast import literal_eval
+from math import factorial
+
+''' Functions for generating random update functions, retrieving preset update functions, and analyzing update functions.
+'''
 
 if __name__=='__main__': 
     exit('Oops, you ran the wrong file.')
@@ -203,6 +207,13 @@ def _starsnbars(a, b):
         for c in range(a+1):
             for sumlist in _starsnbars(a-c,b-1):
                 yield (c,) + sumlist
+  
+def _partition_weight(partition):
+    ''' Returns the number of neighborhood configurations that could result in the given tuple of sums.
+        Used to properly weight neighborhood sum tuples according to how "common" they are.
+    '''
+    return factorial(sum(partition))/np.prod([factorial(i) for i in partition])
+    
 
 def func_dist(ruledict1, ruledict2):
     try:
@@ -220,22 +231,84 @@ def func_dist(ruledict1, ruledict2):
         raise ValueError("Functions must have same domain (i.e. neighborhoods and number of states).")
 
 def outcomes(ruledict):
+    ''' Simply counts how many elements in the domain of the update function map to each state in the codomain.
+        A very rough measure of how "likely" each state is to appear.
+    '''
     totals = [0]*ruledict['states']
-    for key,val in ruledict.items():
-        if key=='states': continue
-        totals[val] += 1
+    for operand,result in ruledict.items():
+        if operand=='states': continue
+        totals[result] += 1
     return totals
 
+def w_outcomes(ruledict):
+    ''' Same as outcomes(), except each result is weighted according to how many possible neighborhoods are admitted by
+        the neighborhood sum tuple that led to that result.
+    '''
+    totals = [0]*ruledict['states']
+    for operand,result in ruledict.items():
+        if operand=='states': continue
+        totals[result] += _partition_weight(operand[1])
+    return totals
+
+
 def stability(ruledict):
+    ''' Returns a list of counts for each state of how many times that state gets mapped to itself by the update function.
+        i.e. how many times ufun(cur_state, nbhd_sums)==next_state for each state.
+    '''
     stable_counts = [0]*ruledict['states']
-    for key,state in ruledict.items():
-        if key=='states': continue
-        if key[0]==state: stable_counts[state] += 1
+    for operand,result in ruledict.items():
+        if operand=='states': continue
+        if operand[0]==result: stable_counts[result] += 1
+    return stable_counts
+
+def w_stability(ruledict):
+    ''' Same as stability() except the count is weighted according to how many possible neighborhoods can result in that particular
+        neighborhood sum tuple.
+    '''
+    stable_counts = [0]*ruledict['states']
+    for operand,result in ruledict.items():
+        if operand=='states': continue
+        if operand[0]==result: stable_counts[result] += _partition_weight(operand[1])
     return stable_counts
 
 def state_weight_matrix(ruledict):
+    ''' Returns a matrix of counts for how many times each cur_state gets mapped to each next_state by the update function.
+        This is a generalization of the stability() measure (stability() returns the diagonal of this matrix).
+    '''
     W = np.zeros((ruledict['states'],ruledict['states']), np.uint8)
-    for key,state in ruledict.items():
-        if key=='states': continue
-        W[key[0], state] += 1
+    for operand,result in ruledict.items():
+        if operand=='states': continue
+        W[operand[0], result] += 1
     return W
+
+def w_state_weight_matrix(ruledict):
+    ''' Same as state_weight_matrix() except the counts are weighted according to how many possible neighborhoods can result in that 
+        particular neighborhood sum tuple.
+    '''
+    W = np.zeros((ruledict['states'],ruledict['states']), np.uint8)
+    for operand,result in ruledict.items():
+        if operand=='states': continue
+        W[operand[0], result] += _partition_weight(operand[1])
+    return W
+
+def nbhd_conformity(ruledict):
+    ''' A measure of how much the result of the update function agrees with the neighborhood pre-update.
+        Does not count the cell itself together with the neighborhood.
+    '''
+    agreement_sum = 0
+    for operand,result in ruledict.items():
+        if operand=='states': continue
+        agreement_sum += operand[1][result]
+    return agreement_sum/(len(ruledict)-1)
+
+def w_nbhd_conformity(ruledict):
+    ''' Same as nbhd_conformity() except the agreement sum is weighted according to how many possible neighborhoods can result in each
+        neighborhood sum tuple.
+    '''
+    agreement_sum = 0
+    for operand,result in ruledict.items():
+        if operand=='states': continue
+        agreement_sum += operand[1][result]*_partition_weight(operand[1])
+    return agreement_sum/(len(ruledict)-1)
+
+
