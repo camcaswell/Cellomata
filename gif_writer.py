@@ -6,10 +6,16 @@ import moviepy.editor
 import numpy as np
 from itertools import repeat
 from types import GeneratorType
+import os
 
 def main():
 
-    FILENAME = 'test' + '.gif'
+    name_attempt = 'test' + '.gif'
+    count = 1
+    while name_attempt in os.listdir():
+        count += 1
+        name_attempt = f'{FILENAME} {count}'
+    FILENAME = name_attempt
 
     SEED = None
 
@@ -30,6 +36,7 @@ def main():
     GENERATIONS = 100
     FRAME_DELAY = .2
 
+
     initial_state = inits.random_state(ROWS, COLUMNS, STATES, SEED, CENTER, CENTER_PROPORTION, H_MIRROR, V_MIRROR)
 
     updater = ufuns.random_update_function(states=STATES, seed=SEED, stability=.69)
@@ -39,8 +46,8 @@ def main():
 
     frames = frame_generator(boards=boardstates, color_map=COLOR_MAP, cell_size=CELL_SIZE)
 
-    ## The moviepy gif writer function requires a function that returns frames for a given time index.
-    ## This function takes a time index, ignores it, and passes the next frame.
+    # The moviepy gif writer function requires a function that returns frames for a given time index.
+    # This function takes a time index, ignores it, and passes the next frame.
     def get_frame(dummy):
         return next(frames)
 
