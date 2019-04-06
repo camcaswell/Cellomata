@@ -117,43 +117,8 @@ def pre_dict(preset_name):
         ruledict = literal_eval(preset_reader.get(preset_name, 'ruledict'))
     return ruledict
 
-
-
-def random_update_function(states=2, nhood='Moore', radius=1, stability=0, state_weights=W, seed=None):
-    ''' random_update_function() generates a random update function in the form of
-        a dict from the uniform distribution over the functionspace as defined by
-        the parameters passed. The dict is overwritten to Last_Random_Update_Function.txt.
-    '''
-    np.random.seed(seed)
-    nbors = (2*radius+1)*(2*radius+1)-1
-
-    ''' *stability* is the probability that a cell will remain in the same state after it is updated
-        (over the uniform space of possible state-neighborhood sum combinations, i.e. ignoring that some configurations may be more likely).
-        Normally the outcome states are chosen uniformly, but this allows you to artificially increase the stability of boardstates.
-    '''
-    if not stability:
-        stability = 1/states
-
-    rules = {'states':states}
-    for state in range(states):
-        pdist = [(1-stability)/(states-1)]*states
-        pdist[state] = stability
-        for neighbor_partition in _starsnbars(nbors, states):
-            rules[state, neighbor_partition] = np.random.choice(states, 1, p=pdist)[0]
-
-    config_writer = ConfigParser()
-    with open('Last_Random.cfg', 'r') as savefile:
-        config_writer.read_file(savefile)
-        config_writer.set('Update Function', 'ruledict', str(rules))
-    with open('Last_Random.cfg', 'w') as savefile:
-        config_writer.write(savefile)
-
-    retfunc = _ruledict_to_generator(rules)
-    retfunc.ruledict = rules
-    return retfunc
-
-def alt_random_update_function(states=2, nhood='Moore', radius=1, stability=0, state_weights=None, seed=None):
-    ''' random_update_function() generates a random update function in the form of
+def random_update_function(states=2, nhood='Moore', radius=1, stability=0, state_weights=None, seed=None):
+    ''' generates a random update function in the form of
         a dict from the uniform distribution over the functionspace as defined by
         the parameters passed. The dict is overwritten to Last_Random_Update_Function.txt.
     '''
@@ -166,15 +131,15 @@ def alt_random_update_function(states=2, nhood='Moore', radius=1, stability=0, s
     '''
     if not state_weights:
         if stability:
-            state_weights = np.zeros(states, states)
-            for i in states:
-                for j in states:
+            state_weights = np.zeros((states, states))
+            for i in range(states):
+                for j in range(states):
                     if i==j:
                         state_weights[i,j] = stability
                     else:
                         state_weights[i,j] = (1-stability)/(states-1)
         else:
-            state_weights = np.ones(states, states) * (1/states)
+            state_weights = np.ones((states, states)) * (1/states)
 
     rules = {'states':states}
     for state in range(states):
