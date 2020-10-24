@@ -185,6 +185,8 @@ def func_dist(ruledict1, ruledict2):
         raise ValueError("Functions must have same domain (i.e. neighborhoods and number of states).")
 
 def outcomes(ruledict):
+    ''' Calculates how many neighborhood sums are mapped to each state by the given update function.
+    '''
     totals = [0]*ruledict['states']
     for key,val in ruledict.items():
         if key=='states': continue
