@@ -7,10 +7,21 @@ __pycache__/
 
 CA_testing\.py
 
-TODO\.txt
-
 *.txt
 
 Last_Random\.cfg
 
 test\.py
+
+# Sublime project
+*.sublime-project
+*.sublime-workspace
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
