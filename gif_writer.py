@@ -3,6 +3,7 @@ import update_functions as ufuns
 import cmap as cm
 
 import moviepy.editor
+from PIL import Image
 import numpy as np
 from itertools import repeat
 from types import GeneratorType
@@ -10,20 +11,22 @@ import os
 
 def main():
 
-    name_attempt = 'test' + '.gif'
+    NEW_GIF_NAME = 'test'
+
+    name_attempt = f'{NEW_GIF_NAME}.gif'
     count = 1
-    while name_attempt in os.listdir():
+    while name_attempt in os.listdir(f'{os.getcwd()}\\Gifs'):
         count += 1
-        name_attempt = f'{FILENAME} {count}'
-    FILENAME = name_attempt
+        name_attempt = f'{NEW_GIF_NAME}{count}.gif'
+    FULL_PATH = f'{os.getcwd()}\\Gifs\\{name_attempt}'
 
     SEED = None
 
     STATES = 3
     #NEIGHBORHOOD = 'Moore'
     #RADIUS = 1
-    ROWS = 50
-    COLUMNS = 50
+    ROWS = 3
+    COLUMNS = 5
  
     CENTER = 0
     CENTER_PROPORTION = .9
@@ -32,9 +35,9 @@ def main():
 
     #COLOR_MAP = cm.preset('WEEN')
     COLOR_MAP = cm.random_cmap(STATES, SEED)
-    CELL_SIZE = 10
-    GENERATIONS = 100
-    FRAME_DELAY = .2
+    CELL_SIZE = 5
+    GENERATIONS = 4
+    FRAME_DELAY = 2
 
 
     initial_state = inits.random_state(ROWS, COLUMNS, STATES, SEED, CENTER, CENTER_PROPORTION, H_MIRROR, V_MIRROR)
@@ -44,18 +47,25 @@ def main():
 
     boardstates = updater(initial_state)
 
-    frames = frame_generator(boards=boardstates, color_map=COLOR_MAP, cell_size=CELL_SIZE)
+    frame_gen = frame_generator(boards=boardstates, color_map=COLOR_MAP, cell_size=CELL_SIZE)
+    frames = []
+    for idx in range(GENERATIONS):
+        frames.append(next(frame_gen))
 
     # The moviepy gif writer function requires a function that returns frames for a given time index.
     # This function takes a time index, ignores it, and passes the next frame.
     def get_frame(dummy):
         return next(frames)
 
-    moviepy.editor.VideoClip(get_frame, duration=GENERATIONS*FRAME_DELAY).write_gif(FILENAME, fps=1/FRAME_DELAY)
+    #moviepy.editor.VideoClip(get_frame, duration=GENERATIONS*FRAME_DELAY).write_gif(FULL_PATH, fps=1/FRAME_DELAY)
+    im = Image.new('RGB', (CELL_SIZE*COLUMNS, CELL_SIZE*ROWS))
+    im.save(FULL_PATH, duration=FRAME_DELAY, loop=0, append_images=frames, save_all=True)
+
 
 def frame_generator(boards, color_map, cell_size=10):
     
-    if not isinstance(color_map, GeneratorType): color_map = repeat(color_map)
+    if not isinstance(color_map, GeneratorType):
+        color_map = repeat(color_map)
 
     for B in boards:
         frame = np.zeros([cell_size*d for d in B.shape]+[3], dtype=np.uint8)
